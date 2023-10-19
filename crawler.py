@@ -2,75 +2,120 @@ from bs4 import BeautifulSoup
 import requests
 import time
 import re
-
+import json
 
 base_url = 'https://www.profesia.sk'
 url = base_url + '/praca/?page_num='
-work_link_buffer = []
-about_link_buffer = []
 
-def get_AboutUs(link):
-    if not about_link_buffer in work_link_buffer:
+offer_link_buffer = []
+company_link_buffer = []
+
+company_i = 0
+
+def get_AboutUs(link, firm_name):
+
+    if not link in company_link_buffer:
+
+        global company_i
+
         res = requests.get(base_url + link)
-        page = BeautifulSoup(res.content)
-        name_firm = "ponuky/" + re.sub("[^A-Za-z0-9šôáčďéíľĺňóôŕšťúýžŠČĎÉĽĹŇÓŔŤÚÝŽ]", '_', page.find("h1").get_text()) + ".html"
+        page = BeautifulSoup(res.content, "html.parser" )
+        name_firm = "firmy/" + re.sub("[^A-Za-z0-9šôáčďéíľĺňóôŕšťúýžŠČĎÉĽĹŇÓŔŤÚÝŽ]", '_', firm_name) + ".html"
 
-def get_work_page(link):
+         
+        f = open(name_firm, "w+", encoding="utf-8")
+        f.write(str(page))
+        f.close()
 
-    if not link in work_link_buffer:
-        res = requests.get(base_url + link)
-        page = BeautifulSoup(res.content)
+        company_i = company_i + 1
+        company_link_buffer.append(link)
+
+        time.sleep(0.1)
+
+
+
+def get_work_page(link, firm_name):
+
+    if not link in offer_link_buffer:
         
-        name_offer = "firmy/" + re.sub("[^A-Za-z0-9šôáčďéíľĺňóôŕšťúýžŠČĎÉĽĹŇÓŔŤÚÝŽ]", '_', page.find("h1").get_text()) + ".html"
+        res = requests.get(base_url + link)
+        page = BeautifulSoup(res.content, "html.parser" )
+        
+        name_offer = "ponuky/" + re.sub("[^A-Za-z0-9šôáčďéíľĺňóôŕšťúýžŠČĎÉĽĹŇÓŔŤÚÝŽ]", '_', link) + ".html"
         
         f = open(name_offer, "w+", encoding="utf-8")
         f.write(str(page))
         f.close()
-        work_link_buffer.append(link)
+
+        offer_link_buffer.append(link)
         time.sleep(0.05)
 
-        card_offer = page.find("div", class_="card no-padding-on-sides no-padding-on-bottom")
 
-        card_links = card_offer.find('nav').find('a', text="O nás")
+        offer_page = page.find("div", class_="card card-content")
 
-        get_AboutUs(card_links['href'])
+        nav_link = offer_page.find('nav')
+        div_link = offer_page.find("ul")
 
+        try:
+            if nav_link: 
+                
+                a_list = nav_link.find_all('a')
 
+                for a in a_list:
+                    
+                    if a.string and a.string.lower() in "o\xa0nás":
+                        print(firm_name)
+                        print("\n")
+                        get_AboutUs(a['href'], firm_name)
+                
 
-   
+            elif div_link:
+                
+                a_list = div_link.find_all('a')
+
+                for a in a_list:
+                    
+                    if a.string and a.string.lower() in "o\xa0nás":
+                        get_AboutUs(a['href'], firm_name)
+        
+        except:
+            print("chyba")
+            
+    else:
+        print("DUPLICATE")
+        
 
 def main():
 
-    i = 1
+    i = int(input("Zadaj poziciu: "))
+
     while True:
 
         res = requests.get(url + str(i))
-        page = BeautifulSoup(res.content)
+        page = BeautifulSoup(res.content, "html.parser" )
         page_list= page.find("div", class_="card no-padding-on-sides no-padding-on-bottom")
        
        
-        link_headers = page_list.find_all("h2")
+        link_headers = page_list.find_all("li", class_="list-row")
 
         if len( link_headers) == 0 : break
        
-        
         for header in link_headers:
-            link = header.find("a")
-            print(link['href'])
-            
+
+            link = header.find("h2").find("a")
+            firm_name = header.find_all("span")[1].get_text()
+            print(i, link['href'])
+            print("\n")
+
+
+            try:
           
-            get_work_page(link['href'])
-           
-       
+                get_work_page(link['href'], firm_name)
+
+            except:
+                print("chyba")
     
         i = i + 1
-        time.sleep(0.1)
-
-       
-        break
-
-
-
-
+        time.sleep(0.05)
 
 main()
