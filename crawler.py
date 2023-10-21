@@ -2,7 +2,6 @@ from bs4 import BeautifulSoup
 import requests
 import time
 import re
-import json
 
 base_url = 'https://www.profesia.sk'
 url = base_url + '/praca/?page_num='
@@ -10,7 +9,6 @@ url = base_url + '/praca/?page_num='
 offer_link_buffer = []
 company_link_buffer = []
 
-company_i = 0
 
 def get_AboutUs(link, firm_name):
 
@@ -27,7 +25,6 @@ def get_AboutUs(link, firm_name):
         f.write(str(page))
         f.close()
 
-        company_i = company_i + 1
         company_link_buffer.append(link)
 
         time.sleep(0.1)
