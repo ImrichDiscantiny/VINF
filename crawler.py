@@ -4,7 +4,7 @@ import time
 import re
 
 base_url = 'https://www.profesia.sk'
-url = base_url + '/praca/?page_num='
+req_url = base_url + '/praca/?page_num='
 
 offer_link_buffer = []
 
@@ -31,15 +31,14 @@ def get_work_page(link, firm_name):
 
 def crawler():
 
-    i = int(input("Zadaj poziciu: "))
+    i = int(input("Zadaj poziciu od 1: "))
 
     while True:
 
-        res = requests.get(url + str(i))
+        res = requests.get(req_url + str(i))
         page = BeautifulSoup(res.content, "html.parser" )
         page_list= page.find("div", class_="card no-padding-on-sides no-padding-on-bottom")
         
-
         if page_list is None : break
        
         link_headers = page_list.find_all("li", class_="list-row")
@@ -52,9 +51,7 @@ def crawler():
             print(i, link['href'])
             print("\n")
 
-
             try:
-          
                 get_work_page(link['href'], firm_name)
 
             except:
