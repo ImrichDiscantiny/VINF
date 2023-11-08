@@ -1,6 +1,7 @@
 import os
 import json
 import lucene
+
 from org.apache.lucene.analysis.standard import StandardAnalyzer
 from org.apache.lucene.index import IndexWriterConfig, IndexWriter, DirectoryReader
 from org.apache.lucene.document import Document, Field, TextField, StringField, IntPoint
@@ -11,7 +12,8 @@ from org.apache.lucene.queryparser.classic import QueryParser
 
 from java.nio.file import Paths
 
-def index_file(record, num, writer):
+
+def index_file(record, num):
     split_end_tag = record["end_tags"].split('.', 1)
     loc =  split_end_tag[0].split(":",1)[1].strip()
   
@@ -21,7 +23,8 @@ def index_file(record, num, writer):
     document.add(Field("start_tags", record["tags"] if record["tags"] else "", TextField.TYPE_STORED))
     document.add(Field("location", loc, StringField.TYPE_STORED))
     document.add(Field("end_tags", split_end_tag[1], TextField.TYPE_NOT_STORED))
-    writer.addDocument(document)
+    
+    return document
     
 
 def create_index():
@@ -35,7 +38,9 @@ def create_index():
     writer = IndexWriter(store, config)
     
     for num, record in enumerate(dataset):
-        index_file(record, num, writer)
+        doc = index_file(record, num)
+        writer.addDocument(doc)
+    
     print("done") 
     writer.commit()
     writer.close() 
