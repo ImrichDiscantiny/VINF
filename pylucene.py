@@ -1,4 +1,5 @@
 import os
+import glob
 import json
 import lucene
 
@@ -12,8 +13,18 @@ from org.apache.lucene.queryparser.classic import QueryParser
 
 from java.nio.file import Paths
 
+def index_xml_columns(record):
+    record
+    return
+    document = Document()
+    document.add(Field("title", record["title"], TextField.TYPE_STORED))
+    document.add(Field("text", record["_VALUE"], TextField.TYPE_STORED))
+    
+    
+    return document
 
-def index_file(record, num):
+
+def index_html_columns(record, num):
     split_end_tag = record["end_tags"].split('.', 1)
     loc =  split_end_tag[0].split(":",1)[1].strip()
   
@@ -25,10 +36,33 @@ def index_file(record, num):
     document.add(Field("end_tags", split_end_tag[1], TextField.TYPE_NOT_STORED))
     
     return document
+
+
+def xml_indexer():
+   
+    analyzer = StandardAnalyzer()
+    config = IndexWriterConfig(analyzer)
+    store = NIOFSDirectory(Paths.get("index"))
+    writer = IndexWriter(store, config)
     
+    os.chdir("wikiset")
+    for file in glob.glob("*.json"):
+        
+        f_in = open(file,"r")
 
-def create_index():
+        for line in f_in:
+            js = json.loads(line)
+            print(js["title"])
+            return
+        # doc = index_file(record, num)
+        # writer.addDocument(doc)
+    
+    print("done") 
+    writer.commit()
+    writer.close()     
 
+
+def html_indexer():
     data = open('Dataset.json', 'r').read() 
     dataset = json.loads(data)
    
@@ -38,7 +72,7 @@ def create_index():
     writer = IndexWriter(store, config)
     
     for num, record in enumerate(dataset):
-        doc = index_file(record, num)
+        doc = index_html_columns(record, num)
         writer.addDocument(doc)
     
     print("done") 
@@ -48,8 +82,9 @@ def create_index():
 
 def search():
     print("ddd")
+    operator = "and"
 
-    index = NIOFSDirectory(Paths.get("index"))
+    index = NIOFSDirectory(Paths.get("index_html"))
     searcher = IndexSearcher(DirectoryReader.open(index))
 
     analyzer = StandardAnalyzer()
@@ -57,7 +92,11 @@ def search():
     query_parser.setDefaultOperator(QueryParser.Operator.AND)
     query = query_parser.parse("Junior AND Java")
     
-    top_docs = searcher.search(query, 10)
+    top_docs = searcher.search(query, 10).scoreDocs
+
+    for docs in top_docs:
+        doc = searcher.doc(docs.doc)
+        print(f"Score: {docs.score}, Content: {doc.get('title')}")
     return
 
 
@@ -68,7 +107,12 @@ def pylucene():
     while(True):
         command = input("type a character: ")
         if command == "i":
-            create_index()
+            print("read html or xml json files h - html x - xml")
+            fileRead = input("type a character: ")
+            if fileRead == "h":
+                html_indexer()
+            else:
+                xml_indexer()
         elif command == "s":
             search()
         elif command == "q":
