@@ -8,6 +8,7 @@ def get_header(input_string):
     return re.sub(r'<[\s\S]*?>', '', input_string)
 
 
+# Zober cisty text z html, vsetko v <> bude vymazane a zaroven headery <li> budu nahradene pre lepsiu semantiku
 def get_clean_text(main_content):
     main_content = re.sub(r"<h[2-6]>",'\n* ',main_content)
     main_content = re.sub(r"<\/h[2-6]>",' *\n',main_content)
@@ -23,7 +24,7 @@ def get_clean_text(main_content):
     
     return main_content
 
-
+# Zober cisty text z html, vsetko v <> bude vymazane
 def get_tags_info(main_tag):
     
     main_tag = re.search(r"<div class=\"padding-on-bottom overall-info\">([\s\S]*?)<\/div>", main_tag).group()
@@ -78,6 +79,7 @@ def offer_parser():
         # dostan cast webstranky kde zacinaju informacie o pracovnej ponuke
         main_content = re.search(r"<h[2-6]>([\s\S]*?)<div class=\"padding-on-bottom overall-info\">", main_tag)
 
+        # Ak nema standartnu strukturu zober vsetko od <h1> 
         if not main_content:
             main_content = re.search(r"<h1.*?>([\s\S]*?)<div class=\"padding-on-bottom overall-info\">", main_tag)
             main_content = get_clean_text(main_content.group())
@@ -92,10 +94,13 @@ def offer_parser():
 
         chunks = len(main_content)
 
+        # Rozdel prilis velky text na chunky a potom ich naraz posli na preklad v jednom http
+        
         main_content_list = [main_content[i:i+2000] for i in range(0, chunks, 2000) ]
         main_content_list = translator.translate(main_content_list, src='sk', dest='en')
         main_text_content = ''.join([o.text for o in main_content_list])
 
+        # tiez naraz posli tagy a nadpis ponuky na preklad v jednom http volani
         header_content = translator.translate([main_h1, end_tags], src='sk', dest='en')
 
         js = {
