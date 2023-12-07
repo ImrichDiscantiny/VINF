@@ -5,32 +5,46 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
 from pyspark.sql.types import *
 
+
+def pageValidator(row):
+
+    print(row)
+    exit()
+    return
+
+
 def xmlParser():
 
-    xmlFile = "xml/enwiki-latest-pages-articles1.xml-p1p41242"
+    xmlFile = "xml/enwiki-latest-pages-articles.xml.bz2"
     spark = SparkSession.builder \
     .appName("vinfXml") \
+    .master("local[*]") \
     .config("spark.jars.packages", "com.databricks:spark-xml_2.12:0.17.0") \
     .getOrCreate()
 
+    xml_schema = StructType([
+        StructField("title", StringType(), True),
+        StructField("revision", StructType([
+            StructField("text", StructType([
+                StructField("_VALUE", StringType(), True)
+            ]), True)
+        ]), True)
+    ])
 
-    df = spark.read.format('xml').options(rowTag='page').load(xmlFile)
+    df = spark.read.format('xml').options(rowTag='page').schema(xml_schema).load(xmlFile, format="xml")
     
-    df = df.filter(col("redirect").isNull())
-    df_filtered = df.filter(col("revision").isNotNull())
-    
-    selected_df = df_filtered.select("title", "revision.text._VALUE")
-    
-    selected_df_settlements = selected_df.where(
-    col("title").isNotNull() &
-    col("revision.text._VALUE").rlike("\\{\\{Infobox settlement[\\s\\S]*?\\}\\}")
-)
-    
+    selected_df = df.select("title", "revision.text._VALUE")
+
+    selected_df_settlements = selected_df.filter(
+        col("revision.text._VALUE").rlike(r"\{\{Infobox settlement[\s\S]*?(Slovakia|Slovak Republic)[\s\S]*?\r?\n\}\}\r?\n")
+    )
+
+    # selected_df_settlements = selected_df.where(
+    #     col("revision.text._VALUE").rlike("\\{\\{Infobox settlement[\\s\\S]*?\\}\\}")
+    # )
+   
     selected_df_settlements.coalesce(1).write.json("wikiset")
-    # \{\{pp-semi-indef[\s\S][SVK|SK|Slovakia][\s\S]*?}}
-    # df_filtered.select("revision.text._VALUE").filter(col("revision.text").isNotNull()).show(1, truncate=False)
-    # df_filtered.select("title", "text._VALUE").filter(col("revision.text").isNotNull()).printSchema()
-    # \{\{Infobox settlement[\s\S]*?(\bSVK\b|\bSvk\b|Slovakia)[\s\S]*?}}
+    
     spark.stop()
 
 xmlParser()

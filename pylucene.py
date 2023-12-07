@@ -1,6 +1,8 @@
 import os
 import glob
 import json
+import re
+import shutil
 import lucene
 
 from org.apache.lucene.analysis.standard import StandardAnalyzer
@@ -14,17 +16,60 @@ from org.apache.lucene.queryparser.classic import QueryParser
 from java.nio.file import Paths
 
 
-def index_xml_columns(record):
-    record
-   
+def text_cleaner(text):
+
+    cleaned_text = re.sub(r"(\[\[|\]\])","", text)
+    cleaned_text = re.sub(r"<ref>[\s\S]*?<\/ref>","", cleaned_text)
+    cleaned_text = re.sub(r"<gallery>[\s\S]*?<\/gallery>","", cleaned_text)
+
+    pattern = r'{{([^{}]*)}}'
+    
+    # odstran vsetko v {{}}
+    while re.search(pattern, cleaned_text):
+        cleaned_text = re.sub(pattern, "", cleaned_text)
+    
+    return cleaned_text
+
+
+def title_cleaner(text):
+    return re.sub(r"\(.*?\)", "", text)
+
+
+def get_settlement(text):
+    match = re.search(r"settlement_type(.*?)\n", text)
+    if match:
+        match = match.group(1).split('=')[1]
+        return re.sub(r"(\[\[|\]\])","", match)
+    else:
+        return " "
+
+
+def add_xml_columns(record):
+    
+    title = title_cleaner( record["title"])
+    settlement =  get_settlement(record["_VALUE"])
+    text = text_cleaner(record["_VALUE"])
+    
+    print(title)
+    print(text)
     document = Document()
-    document.add(Field("title", record["title"], StringField.TYPE_STORED))
-    document.add(Field("text", record["_VALUE"], TextField.TYPE_STORED))
+    
+    document.add(Field("title", title, StringField.TYPE_STORED))
+    document.add(Field("settlement", settlement, StringField.TYPE_STORED))
+    document.add(Field("text", text, TextField.TYPE_STORED))
     
     return document
 
 
 def xml_indexer():
+
+    # ak existuje priecinok s indexom vymaz a znova ho vytvor
+    dir = 'index_xml'
+    
+    if os.path.exists(dir):
+        shutil.rmtree(dir)
+      
+    os.makedirs(dir)
    
     analyzer = StandardAnalyzer()
     config = IndexWriterConfig(analyzer)
@@ -39,16 +84,25 @@ def xml_indexer():
 
         for line in f_in:
             js = json.loads(line)
-            doc = index_xml_columns(js)
+            doc = add_xml_columns(js)
             writer.addDocument(doc)
       
-    
     print("done") 
+    exit()
     writer.commit()
     writer.close()     
 
 
 def html_indexer():
+
+    # ak existuje priecinok s indexom vymaz a znova ho vytvor
+    dir = 'index_html'
+
+    if os.path.exists(dir):
+        shutil.rmtree(dir)
+        
+    os.makedirs(dir)
+
     data = open('Dataset.json', 'r').read() 
     dataset = json.loads(data)
    
@@ -57,7 +111,7 @@ def html_indexer():
     store = NIOFSDirectory(Paths.get("index_html"))
     writer = IndexWriter(store, config)
     
-    for num, record in dataset:
+    for record in dataset:
         split_end_tag = record["end_tags"].split('.', 1)
         loc =  split_end_tag[0].split(":",1)[1].strip()
 
@@ -93,7 +147,6 @@ def search_settlement(offer_doc):
         print(f"Score: {docs.score}, Content: {doc.get('title')}")
     return  
 
-    return
 
 
 def options_picker(options_list, options_print, searcher):
@@ -183,10 +236,11 @@ def main():
             
             if fileRead == "h":
                 html_indexer()
-            else:
+            
+            elif fileRead == "x" :
                 xml_indexer()
         
-        elif command == "s":
+        elif command == "s" and os.path.isdir('index_html') and os.path.isdir("index_xml"):
             search_work()
             
         elif command == "q":
@@ -194,7 +248,7 @@ def main():
             return
         
         else:
-            print("Try again")
+            print("Try again or first create index with -i")
 
 
 main()
