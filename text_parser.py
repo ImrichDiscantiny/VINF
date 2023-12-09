@@ -54,7 +54,7 @@ def create_header(main_tag):
     else: return None
 
 
-def offer_parser():
+def profesia_parser():
 
     ponuky_path = "raw_html/ponuky/"
     json_obj = []
@@ -116,12 +116,7 @@ def offer_parser():
     with open("Dataset.json", "w",encoding='utf-8') as f:
         json.dump(json_obj, f, indent=4, ensure_ascii=False)
         
-
-   
- 
-
     return
 
 
-
-offer_parser()
+profesia_parser()
