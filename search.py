@@ -120,6 +120,11 @@ def search_work(unit):
         print("\n")
         for obj in grouped_regions:
             print(f"Region: {obj['region']}, Count: {obj['count']}")
+        
+        repeat = input("Repeat again?(y/n)")
+
+        if repeat == "y": continue
+
         return 
 
 

@@ -44,9 +44,18 @@ def get_settlement_type(text):
 
 
 def get_settlement_region(text):
-    match = re.search(r"subdivision_name2(.*?)\n", text)
+    match1 = re.search(r"subdivision_name1(.*?)\n", text)
+    match2 = re.search(r"subdivision_name2(.*?)\n", text)
+
+    if match1 and re.search(r"Region\|", match1.group(1)):
+        match = match1.group(1)
+    elif match2 and re.search(r"Region\|", match2.group(1)):
+        match = match2.group(1)
+    else:
+        match = None
+
     if match:
-        match = match.group(1).split('=')[1]
+        match = match.split('=')[1]
         match = re.sub(r"\[\[File:Coat of Arms of Bratislava Region.svg\|20px\]\]", "", match)
         match = re.sub(r"(\|)",", ", match)
         return re.sub(r"(\[\[|\]\])","", match).lower()
@@ -185,7 +194,7 @@ def main():
 
             u2 = Unit1('profesions', 'AND', 'breeder', "agronomist")
 
-            u3 = Unit1('title', 'OR', 'Javascript', "Java")
+            u3 = Unit1('title', 'AND', 'Junior', "Java")
 
             search_work(u3)
             
