@@ -8,7 +8,7 @@ def get_header(input_string):
     return re.sub(r'<[\s\S]*?>', '', input_string)
 
 
-# Zober cisty text z html, vsetko v <> bude vymazane a zaroven headery <li> budu nahradene pre lepsiu semantiku
+# Zober cisty text z html, vsetko v <> bude vymazane a zaroven headery <li> budu nahradene pre lepsiie formatovanie
 def get_clean_text(main_content):
     main_content = re.sub(r"<h[2-6]>",'\n* ',main_content)
     main_content = re.sub(r"<\/h[2-6]>",' *\n',main_content)

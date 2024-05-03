@@ -6,13 +6,6 @@ from pyspark.sql.functions import *
 from pyspark.sql.types import *
 
 
-def pageValidator(row):
-
-    print(row)
-    exit()
-    return
-
-
 def xmlParser():
 
     xmlFile = "xml/enwiki-latest-pages-articles.xml.bz2"
@@ -22,6 +15,7 @@ def xmlParser():
     .config("spark.jars.packages", "com.databricks:spark-xml_2.12:0.17.0") \
     .getOrCreate()
 
+    # schema df
     xml_schema = StructType([
         StructField("title", StringType(), True),
         StructField("revision", StructType([
@@ -35,13 +29,10 @@ def xmlParser():
     
     selected_df = df.select("title", "revision.text._VALUE")
 
+    # filtrovanie na zaklade infoboxov
     selected_df_settlements = selected_df.filter(
         col("revision.text._VALUE").rlike(r"\{\{Infobox settlement[\s\S]*?(Slovakia|Slovak Republic)[\s\S]*?\r?\n\}\}\r?\n")
     )
-
-    # selected_df_settlements = selected_df.where(
-    #     col("revision.text._VALUE").rlike("\\{\\{Infobox settlement[\\s\\S]*?\\}\\}")
-    # )
    
     selected_df_settlements.coalesce(1).write.json("wikiset")
     

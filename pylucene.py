@@ -51,9 +51,11 @@ def get_settlement_region(text):
         match = match1.group(1)
     elif match2 and re.search(r"Region\|", match2.group(1)):
         match = match2.group(1)
+    elif match2 is not None:
+        match = match2.group(1)
     else:
         match = None
-
+    
     if match:
         match = match.split('=')[1]
         match = re.sub(r"\[\[File:Coat of Arms of Bratislava Region.svg\|20px\]\]", "", match)
@@ -196,7 +198,9 @@ def main():
 
             u3 = Unit1('title', 'AND', 'Junior', "Java")
 
-            search_work(u3)
+            u4 = Unit1('company', 'NONE', 'ESET', None)
+
+            search_work(u2)
             
         elif command == "q":
             print("Quitting..")

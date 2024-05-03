@@ -105,6 +105,7 @@ def search_work(unit):
 
         documents_offers = searcher.search(query, 50).scoreDocs
         
+        # spocitaj vysledky a zaroven vytvor docasny merge
         grouped_regions = []
         
         for option, obj in enumerate(documents_offers):
@@ -118,6 +119,7 @@ def search_work(unit):
             grouped_regions = count_regions(grouped_regions, region)
         
         print("\n")
+        
         for obj in grouped_regions:
             print(f"Region: {obj['region']}, Count: {obj['count']}")
         
@@ -134,7 +136,6 @@ def search_settlement(record):
     searcher = IndexSearcher(DirectoryReader.open(index))
     analyzer = StandardAnalyzer()
 
-    
     query_parser = QueryParser("title", analyzer)
 
     query = query_parser.parse(record)
@@ -146,4 +147,4 @@ def search_settlement(record):
         
         return  doc.get('region')
     
-    return 
+    return record
